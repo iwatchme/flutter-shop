@@ -78,7 +78,7 @@ class _LeftCategoryState extends State<LeftCategoryNav> {
         });
         var childCategory = list[index].bxMallSubDto;
         Provide.value<ChildCategory>(context)
-            .getChildCategoryList(childCategory);
+            .getChildCategoryList(childCategory, list[index].mallCategoryId);
         _getGoodList(categoryId: list[index].mallCategoryId);
       },
       child: Container(
@@ -98,29 +98,31 @@ class _LeftCategoryState extends State<LeftCategoryNav> {
 
   void _GetCategory() async {
     await request(servicePath['getCategory']).then((value) {
-      print("frank: $value");
       CategoryListModel listModel =
           CategoryListModel.fromJson(json.decode(value));
       setState(() {
         list = listModel.data;
       });
       Provide.value<ChildCategory>(context)
-          .getChildCategoryList(list[0].bxMallSubDto);
+          .getChildCategoryList(list[0].bxMallSubDto, list[0].mallCategoryId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        width: ScreenUtil.instance.setWidth(180),
-        decoration: BoxDecoration(
-            border: Border(right: BorderSide(width: 1, color: Colors.black12))),
-        child: ListView.builder(
-          itemCount: list.length,
-          itemBuilder: (context, index) {
-            return _leftInkWel(index, context);
-          },
-        ));
+    return Expanded(
+      child: Container(
+          width: ScreenUtil.instance.setWidth(180),
+          decoration: BoxDecoration(
+              border:
+                  Border(right: BorderSide(width: 1, color: Colors.black12))),
+          child: ListView.builder(
+            itemCount: list.length,
+            itemBuilder: (context, index) {
+              return _leftInkWel(index, context);
+            },
+          )),
+    );
   }
 
   @override
@@ -159,6 +161,23 @@ class _RightCategoryNavState extends State<RightCategoryNav> {
     ));
   }
 
+  void _getGoodList(String subCategoryId) async {
+    var data = {
+      'categoryId': Provide.value<ChildCategory>(context).categoryId,
+      'categorySubId': subCategoryId,
+      'page': 1
+    };
+    await request(servicePath['getMallGoods'], formData: data).then((val) {
+      var data = json.decode(val);
+      CategoryGoodsListModel categoryGoodsListModel =
+          CategoryGoodsListModel.fromJson(data);
+      Provide.value<CategoryGoodsListProvide>(context).getGoodsList(
+          categoryGoodsListModel.data == null
+              ? []
+              : categoryGoodsListModel.data);
+    });
+  }
+
   Widget _rightInkWell(BxMallSubDto item, int index) {
     bool isCheck = false;
     isCheck = (index == Provide.value<ChildCategory>(context).childIndex)
@@ -168,6 +187,7 @@ class _RightCategoryNavState extends State<RightCategoryNav> {
     return InkWell(
       onTap: () {
         Provide.value<ChildCategory>(context).changeChildIndex(index);
+        _getGoodList(item.mallSubId);
       },
       child: Container(
         padding: EdgeInsets.fromLTRB(5.0, 10.0, 5.0, 10.0),
@@ -186,7 +206,6 @@ class _RightCategoryNavState extends State<RightCategoryNav> {
 class CategoryGoodList extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return _CategoryGoodListState();
   }
 }
